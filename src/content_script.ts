@@ -15,11 +15,12 @@ const queryMuteButton = () =>
   );
 
 const notifyMuteStateChange = () => {
-  if (muteButton)
+  if (muteButton) {
     chrome.runtime.sendMessage({
       event: EVENT_MUTE_STATE_CHANGED,
       isMuted: muteButton.dataset.isMuted === "true",
     } as Message);
+  }
 };
 
 const notifyTabFound = () => {
@@ -29,11 +30,30 @@ const notifyTabFound = () => {
   } as Message);
 };
 
-(async () => {
-  chrome.runtime.onMessage.addListener((_msg, _sender, _sendResponse) => {
+const toggleMute = () => {
+  if (muteButton) {
     const ev = new MouseEvent("click", { bubbles: true });
-    muteButton?.dispatchEvent(ev);
-  });
+    muteButton.dispatchEvent(ev);
+  }
+};
+
+interface EventSourceMessage extends Event {
+  data?: string | undefined;
+}
+
+const sseConnection = new EventSource("http://localhost:29290/sse");
+sseConnection.addEventListener("state", (event: EventSourceMessage) => {
+  if (muteButton?.dataset.isMuted != undefined) {
+    const state = JSON.parse(event.data!);
+    const buttonState = JSON.parse(muteButton.dataset.isMuted);
+    if (state.muted != buttonState) {
+      toggleMute();
+    }
+  }
+});
+
+(async () => {
+  chrome.runtime.onMessage.addListener(toggleMute);
 
   for (;;) {
     muteButton = queryMuteButton();

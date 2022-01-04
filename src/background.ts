@@ -37,12 +37,16 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, _sendResponse) => {
 
   switch (msg.event) {
     case "EVENT_MUTE_STATE_CHANGED":
+      fetch("http://localhost:29290/" + (msg.isMuted ? "mute" : "unmute")).then(
+        (res) => res.json()
+      );
       chrome.browserAction.setIcon({
         tabId,
         path: msg.isMuted
           ? "assets/icons/mic_off.png"
           : "assets/icons/mic_on.png",
       });
+
       break;
 
     case "EVENT_TAB_FOUND":
